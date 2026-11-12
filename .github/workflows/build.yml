@@ -24,11 +24,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fix permissions and verify project files
+      - name: Locate Godot project (any folder)
         run: |
           chmod -R a+rwX "$GITHUB_WORKSPACE" || true
-          test -f project.godot || { echo "project.godot missing at repo root"; exit 1; }
-          test -f export_presets.cfg || { echo "export_presets.cfg missing at repo root"; exit 1; }
+          echo "== repo files =="
+          find . -maxdepth 3 -not -path './.git/*' | head -50
+          P="$(find . -name project.godot -not -path './.git/*' | head -1)"
+          if [ -z "$P" ]; then
+            echo "ERROR: project.godot not found anywhere in the repo. Upload the project files."
+            exit 1
+          fi
+          DIR="$(cd "$(dirname "$P")" && pwd)"
+          echo "Project dir: $DIR"
+          test -f "$DIR/export_presets.cfg" || { echo "ERROR: export_presets.cfg missing next to project.godot"; exit 1; }
+          echo "PROJECT_DIR=$DIR" >> "$GITHUB_ENV"
 
       - name: Install export templates
         run: |
@@ -47,6 +56,7 @@ jobs:
 
       - name: Generate editor settings and import project
         run: |
+          cd "$PROJECT_DIR"
           godot --headless --verbose --editor --quit || true
           ls -la .godot || true
 
@@ -71,9 +81,10 @@ jobs:
 
       - name: Export APK
         run: |
-          mkdir -p build
-          godot --headless --verbose --export-debug "Android" build/NeonRacer.apk
-          ls -lh build
+          mkdir -p "$GITHUB_WORKSPACE/build"
+          cd "$PROJECT_DIR"
+          godot --headless --verbose --export-debug "Android" "$GITHUB_WORKSPACE/build/NeonRacer.apk"
+          ls -lh "$GITHUB_WORKSPACE/build"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
