@@ -50,20 +50,30 @@ jobs:
 
       - name: Install export templates
         run: |
-          T=~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          echo "GODOT_VERSION=${GODOT_VERSION}"
+          T="$HOME/.local/share/godot/export_templates/4.3.stable"
           mkdir -p "$T"
-          SRC=/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable
-          if [ -d "$SRC" ]; then cp -r "$SRC"/. "$T"/; fi
-          echo "== templates in image =="; ls "$T" | head -40
-          if [ ! -f "$T/android_debug.apk" ]; then
-            echo "android_debug.apk missing -> downloading official export templates"
-            URL="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
-            wget -q "$URL" -O /tmp/templates.tpz
+          echo "== searching templates already on this machine =="
+          FOUND="$(find / -name android_debug.apk -not -path '/proc/*' 2>/dev/null | head -1)"
+          echo "found: $FOUND"
+          if [ -n "$FOUND" ]; then
+            cp -r "$(dirname "$FOUND")"/. "$T"/
+          else
+            echo "== downloading official export templates =="
+            ok=0
+            for URL in \
+              "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz" \
+              "https://downloads.tuxfamily.org/godotengine/4.3/Godot_v4.3-stable_export_templates.tpz"; do
+              echo "trying $URL"
+              if curl -fSL --retry 3 -o /tmp/templates.tpz "$URL"; then ok=1; break; fi
+            done
+            [ "$ok" = "1" ] || { echo "ERROR: could not download export templates"; exit 1; }
             mkdir -p /tmp/tpl
             unzip -q -o /tmp/templates.tpz -d /tmp/tpl || python3 -m zipfile -e /tmp/templates.tpz /tmp/tpl
             cp -r /tmp/tpl/templates/. "$T"/
           fi
-          ls -la "$T/android_debug.apk" "$T/android_release.apk"
+          ls -la "$T" | head -40
+          test -f "$T/android_debug.apk" || { echo "ERROR: android_debug.apk still missing"; exit 1; }
 
       - name: Create debug keystore
         run: |
