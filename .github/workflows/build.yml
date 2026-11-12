@@ -31,6 +31,15 @@ jobs:
           find . -maxdepth 3 -not -path './.git/*' | head -50
           P="$(find . -name project.godot -not -path './.git/*' | head -1)"
           if [ -z "$P" ]; then
+            Z="$(find . -maxdepth 2 -name '*.zip' -not -path './.git/*' | head -1)"
+            if [ -n "$Z" ]; then
+              echo "No project.godot found; extracting $Z"
+              mkdir -p "$GITHUB_WORKSPACE/_project"
+              unzip -q -o "$Z" -d "$GITHUB_WORKSPACE/_project"
+              P="$(find "$GITHUB_WORKSPACE/_project" -name project.godot | head -1)"
+            fi
+          fi
+          if [ -z "$P" ]; then
             echo "ERROR: project.godot not found anywhere in the repo. Upload the project files."
             exit 1
           fi
