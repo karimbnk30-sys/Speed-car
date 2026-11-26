@@ -38,6 +38,8 @@ jobs:
           fi
           PROJECT_DIR=$(dirname "$PROJECT_FILE")
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          APP_VERSION=$(grep -m1 '^config/version=' "$PROJECT_DIR/project.godot" | cut -d'"' -f2)
+          echo "APP_VERSION=${APP_VERSION:-0}" >> "$GITHUB_ENV"
           echo "Project folder: $PROJECT_DIR"
           if [ ! -f "$PROJECT_DIR/export_presets.cfg" ]; then
             echo "ERROR: export_presets.cfg missing in $PROJECT_DIR (upload it to the repo)"; exit 1
@@ -78,9 +80,11 @@ jobs:
         run: |
           mkdir -p "$PROJECT_DIR/build"
           godot --headless --path "$PROJECT_DIR" --export-debug "Android" build/NeonRacer.apk
+          cp "$PROJECT_DIR/build/NeonRacer.apk" "$PROJECT_DIR/build/NeonRacer-v${APP_VERSION}.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: NeonRacer-apk
-          path: ${{ env.PROJECT_DIR }}/build/NeonRacer.apk
+          name: NeonRacer-v${{ env.APP_VERSION }}-apk
+          path: ${{ env.PROJECT_DIR }}/build/NeonRacer-v${{ env.APP_VERSION }}.apk
+          retention-days: 30
