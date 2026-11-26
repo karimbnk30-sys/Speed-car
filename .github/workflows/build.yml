@@ -25,6 +25,15 @@ jobs:
           ls -la
           PROJECT_FILE=$(find . -name project.godot -not -path "./.git/*" | head -n 1)
           if [ -z "$PROJECT_FILE" ]; then
+            ZIP_FILE=$(ls -1 *.zip 2>/dev/null | head -n 1)
+            if [ -n "$ZIP_FILE" ]; then
+              echo "No project.godot found; extracting $ZIP_FILE"
+              mkdir -p project_src
+              unzip -q -o "$ZIP_FILE" -d project_src
+              PROJECT_FILE=$(find project_src -name project.godot | head -n 1)
+            fi
+          fi
+          if [ -z "$PROJECT_FILE" ]; then
             echo "ERROR: project.godot not found in repo"; exit 1
           fi
           PROJECT_DIR=$(dirname "$PROJECT_FILE")
