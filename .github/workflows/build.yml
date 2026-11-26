@@ -6,13 +6,13 @@ on:
   workflow_dispatch:
 
 env:
-  GODOT_VERSION: "4.3"
+  GODOT_VERSION: "4.7.2"
 
 jobs:
   export-android:
     runs-on: ubuntu-22.04
     container:
-      image: barichello/godot-ci:4.3
+      image: barichello/godot-ci:4.7.2
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,7 +30,7 @@ jobs:
           mkdir -p ~/.config/godot
           JAVA_DIR=$(dirname $(dirname $(readlink -f $(which javac))))
           SDK_DIR=${ANDROID_HOME:-/usr/lib/android-sdk}
-          cat > ~/.config/godot/editor_settings-4.3.tres <<EOT
+          cat > ~/.config/godot/editor_settings-4.7.tres <<EOT
           [gd_resource type="EditorSettings" format=3]
 
           [resource]
@@ -40,7 +40,7 @@ jobs:
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           EOT
-          sed -i 's/^          //' ~/.config/godot/editor_settings-4.3.tres
+          sed -i 's/^          //' ~/.config/godot/editor_settings-4.7.tres
 
       - name: Import project resources
         run: godot --headless --verbose --import || true
